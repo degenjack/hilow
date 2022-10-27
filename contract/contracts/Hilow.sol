@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.10;
 
-import "hardhat/console.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PayableContract.sol";
+import "./CardsHoldingInterface.sol";
 
 contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
     struct Card {
@@ -35,20 +34,17 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
         0x4b09e658ed251bcafeebbc69400383d49f344ace09b9576fe248bb02c003fe9f;
     uint32 constant callbackGasLimit = 1000000;
     uint16 constant requestConfirmations = 3;
-    uint32 private constant MAX_WORDS = 20;
-    uint32 private constant BUFFER_WORDS = 16;
+    uint32 private MAX_WORDS;
     uint256 MAX_BET_AMOUNT = 5 * 10**18;
     PayableHilowContract teamContract;
     PayableHilowContract supportersContract;
+    CardsHoldingInterface cardsHolding;
     Card placeholderCard = Card(0);
     GameCards placeholderGameCards =
         GameCards(placeholderCard, placeholderCard, placeholderCard);
     Game placeholderGame = Game(placeholderGameCards, 0, false, false);
     mapping(uint256 => uint256) private LOW_BET_PAYOFFS;
     mapping(uint256 => uint256) private HIGH_BET_PAYOFFS;
-    Card[MAX_WORDS] internal cards;
-    using Counters for Counters.Counter;
-    Counters.Counter private _currentCard;
     mapping(address => Game) private gamesByAddr;
 
     event CardDrawn(address indexed player, uint256 firstDrawCard);
@@ -72,7 +68,9 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
     constructor(
         uint64 subscriptionId,
         address payable _teamPayoutContractAddress,
-        address payable _supportersPayoutContractAddress
+        address payable _supportersPayoutContractAddress,
+        address _cardsHoldingContractAddress,
+        uint32 maxWords
     ) payable VRFConsumerBaseV2(vrfCoordinator) {
         COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
         s_subscriptionId = subscriptionId;
@@ -80,6 +78,8 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
         supportersContract = PayableHilowContract(
             _supportersPayoutContractAddress
         );
+        cardsHolding = CardsHoldingInterface(_cardsHoldingContractAddress);
+        MAX_WORDS = maxWords;
 
         // Set low bet payoffs
         LOW_BET_PAYOFFS[1] = 200;
@@ -123,19 +123,6 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
         require(success, "Withdraw failed");
     }
 
-    function viewCards()
-        public
-        view
-        onlyOwner
-        returns (Card[MAX_WORDS] memory)
-    {
-        return cards;
-    }
-
-    function viewCurrentCardCounter() public view onlyOwner returns (uint256) {
-        return _currentCard.current();
-    }
-
     function viewGame(address addr)
         public
         view
@@ -156,7 +143,6 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
     }
 
     function tip() public payable {
-        console.log("Dealer tipped");
         emit DealerTipped(msg.sender, msg.value);
     }
 
@@ -178,10 +164,7 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
         internal
         override
     {
-        for (uint256 index = 0; index < MAX_WORDS; index++) {
-            cards[index] = Card((randomWords[index] % 13) + 1);
-        }
-        _currentCard.reset();
+        cardsHolding.storeCards(randomWords);
     }
 
     function isGameAlreadyStarted() public view returns (bool) {
@@ -203,17 +186,16 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
     }
 
     function drawCard() public {
-        if (_currentCard.current() > BUFFER_WORDS) {
+        require(!isGameAlreadyStarted(), "Game already started");
+
+        uint256 firstDrawValue;
+        bool shouldTriggerDraw;
+        (firstDrawValue, shouldTriggerDraw) = cardsHolding.getNextCard();
+        Card memory firstDraw = Card(firstDrawValue);
+        if (shouldTriggerDraw) {
             drawBulkRandomCards();
         }
-        if (_currentCard.current() >= MAX_WORDS) {
-            _currentCard.reset();
-        }
 
-        require(!isGameAlreadyStarted(), "Game already started");
-        uint256 currentCard = _currentCard.current();
-        _currentCard.increment();
-        Card memory firstDraw = cards[currentCard];
         GameCards memory gameCards = GameCards(
             firstDraw,
             placeholderCard,
@@ -291,13 +273,15 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
             "Second card has already been drawn for the game"
         );
         payCommission();
-        if (_currentCard.current() >= MAX_WORDS) {
-            _currentCard.reset();
+
+        uint256 secondDrawValue;
+        bool shouldTriggerDraw;
+        (secondDrawValue, shouldTriggerDraw) = cardsHolding.getNextCard();
+        Card memory secondDraw = Card(secondDrawValue);
+        if (shouldTriggerDraw) {
+            drawBulkRandomCards();
         }
 
-        uint256 currentCard = _currentCard.current();
-        _currentCard.increment();
-        Card memory secondDraw = cards[currentCard];
         currentGameCards.secondDraw = secondDraw;
         currentGame.betAmount = msg.value;
         currentGame.firstPrediction = higher;
@@ -338,13 +322,15 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
             currentGameCards.thirdDraw.value == 0,
             "Third card has already been drawn for the game"
         );
-        if (_currentCard.current() >= MAX_WORDS) {
-            _currentCard.reset();
+
+        uint256 thirdDrawValue;
+        bool shouldTriggerDraw;
+        (thirdDrawValue, shouldTriggerDraw) = cardsHolding.getNextCard();
+        Card memory thirdDraw = Card(thirdDrawValue);
+        if (shouldTriggerDraw) {
+            drawBulkRandomCards();
         }
 
-        uint256 currentCard = _currentCard.current();
-        _currentCard.increment();
-        Card memory thirdDraw = cards[currentCard];
         currentGameCards.thirdDraw = thirdDraw;
         currentGame.secondPrediction = higher;
         gamesByAddr[msg.sender] = Game(

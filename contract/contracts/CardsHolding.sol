@@ -7,7 +7,7 @@ import "./CardsHoldingInterface.sol";
 contract CardsHolding is CardsHoldingInterface {
     uint32 private MAX_WORDS;
     uint32 private BUFFER_WORDS;
-    Card[20] internal cards;
+    uint256[20] internal cards;
     using Counters for Counters.Counter;
     Counters.Counter private _currentCard;
 
@@ -19,7 +19,7 @@ contract CardsHolding is CardsHoldingInterface {
 
     function getNextCard()
         external
-        returns (Card memory card, bool shouldTriggerDraw)
+        returns (uint256 card, bool shouldTriggerDraw)
     {
         if (_currentCard.current() > BUFFER_WORDS) {
             shouldTriggerDraw = true;
@@ -34,7 +34,7 @@ contract CardsHolding is CardsHoldingInterface {
 
     function storeCards(uint256[] memory cardValues) external {
         for (uint256 index = 0; index < MAX_WORDS; index++) {
-            cards[index] = Card((cardValues[index] % 13) + 1);
+            cards[index] = (cardValues[index] % 13) + 1;
         }
         _currentCard.reset();
     }
