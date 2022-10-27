@@ -27,11 +27,23 @@ const deploy = async () => {
   await HilowNFT.deployed();
   console.log("Supporters NFT deployed to -", HilowNFT.address);
 
+  const CardsHoldingFactory = await hre.ethers.getContractFactory(
+    "CardsHolding"
+  );
+  const CardsHolding = await CardsHoldingFactory.deploy(process.env.MAX_WORDS);
+  await CardsHolding.deployed();
+  console.log("Cards Holding contract deployed to -", CardsHolding.address);
+
   const HilowFactory = await hre.ethers.getContractFactory("Hilow");
   const Hilow = await HilowFactory.deploy(
     process.env.CHAINLINK_VRF_SUBSCRIPTION_ID,
     HilowCommissionsPayout.address,
-    HilowNFT.address
+    HilowNFT.address,
+    CardsHolding.address,
+    process.env.MAX_WORDS,
+    {
+      value: hre.ethers.utils.parseEther("1"),
+    }
   );
   await Hilow.deployed();
   console.log("Game deployed to -", Hilow.address);
