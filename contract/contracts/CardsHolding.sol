@@ -14,6 +14,7 @@ contract CardsHolding is CardsHoldingInterface {
     constructor(uint32 maxWords) {
         require(maxWords <= 20, "maxWords should be less than 20");
         MAX_WORDS = maxWords;
+        BUFFER_WORDS = maxWords - 3;
     }
 
     function getNextCard()
