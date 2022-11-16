@@ -18,7 +18,7 @@ const deploy = async () => {
     teamPayoutRatios
   );
   await HilowCommissionsPayout.deployed();
-  console.log("Team contract deployed to -", HilowCommissionsPayout.address);
+  console.log("Team payout contract deployed to -", HilowCommissionsPayout.address);
 
   const HilowNFTFactory = await hre.ethers.getContractFactory(
     "HilowSupporterNFT"
@@ -30,7 +30,8 @@ const deploy = async () => {
   const CardsHoldingFactory = await hre.ethers.getContractFactory(
     "CardsHolding"
   );
-  const CardsHolding = await CardsHoldingFactory.deploy(process.env.MAX_WORDS);
+  //const CardsHolding = await CardsHoldingFactory.deploy(process.env.MAX_WORDS);
+  const CardsHolding = await CardsHoldingFactory.deploy();
   await CardsHolding.deployed();
   console.log("Cards Holding contract deployed to -", CardsHolding.address);
 
@@ -42,7 +43,7 @@ const deploy = async () => {
     CardsHolding.address,
     process.env.MAX_WORDS,
     {
-      value: hre.ethers.utils.parseEther("1"),
+      value: hre.ethers.utils.parseEther("0.1"),
     }
   );
   await Hilow.deployed();

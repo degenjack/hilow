@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.7;
 
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
@@ -25,14 +25,14 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
         bool firstPrediction;
         bool secondPrediction;
     }
-
+    address public AutomationAddress;
     VRFCoordinatorV2Interface COORDINATOR;
     uint64 s_subscriptionId;
     address constant vrfCoordinator =
         0x7a1BaC17Ccc5b313516C5E16fb24f7659aA5ebed;
     bytes32 constant s_keyHash =
         0x4b09e658ed251bcafeebbc69400383d49f344ace09b9576fe248bb02c003fe9f;
-    uint32 constant callbackGasLimit = 1000000;
+    uint32 constant callbackGasLimit = 300000;
     uint16 constant requestConfirmations = 3;
     uint32 private MAX_WORDS;
     uint256 MAX_BET_AMOUNT = 5 * 10**18;
@@ -81,35 +81,7 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
         cardsHolding = CardsHoldingInterface(_cardsHoldingContractAddress);
         MAX_WORDS = maxWords;
 
-        // Set low bet payoffs
-        LOW_BET_PAYOFFS[1] = 200;
-        LOW_BET_PAYOFFS[2] = 192;
-        LOW_BET_PAYOFFS[3] = 184;
-        LOW_BET_PAYOFFS[4] = 176;
-        LOW_BET_PAYOFFS[5] = 169;
-        LOW_BET_PAYOFFS[6] = 161;
-        LOW_BET_PAYOFFS[7] = 153;
-        LOW_BET_PAYOFFS[8] = 146;
-        LOW_BET_PAYOFFS[9] = 138;
-        LOW_BET_PAYOFFS[10] = 130;
-        LOW_BET_PAYOFFS[11] = 123;
-        LOW_BET_PAYOFFS[12] = 115;
-        LOW_BET_PAYOFFS[13] = 100;
-
-        // Set low bet payoffs
-        HIGH_BET_PAYOFFS[1] = 100;
-        HIGH_BET_PAYOFFS[2] = 115;
-        HIGH_BET_PAYOFFS[3] = 123;
-        HIGH_BET_PAYOFFS[4] = 130;
-        HIGH_BET_PAYOFFS[5] = 138;
-        HIGH_BET_PAYOFFS[6] = 146;
-        HIGH_BET_PAYOFFS[7] = 153;
-        HIGH_BET_PAYOFFS[8] = 161;
-        HIGH_BET_PAYOFFS[9] = 169;
-        HIGH_BET_PAYOFFS[10] = 176;
-        HIGH_BET_PAYOFFS[11] = 184;
-        HIGH_BET_PAYOFFS[12] = 192;
-        HIGH_BET_PAYOFFS[13] = 200;
+        setBetAmounts();
     }
 
     receive() external payable {}
@@ -156,7 +128,13 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
         );
     }
 
-    function initialCardLoad() public onlyOwner {
+    //Do we need this function
+    function initialCardLoad() public {
+        require(AutomationAddress != address(0), "AutomationAddress null, please ask admin to set the address");
+        require(
+            AutomationAddress == msg.sender,
+            " Only authorised address can call the function"
+        );
         drawBulkRandomCards();
     }
 
@@ -190,11 +168,13 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
 
         uint256 firstDrawValue;
         bool shouldTriggerDraw;
-        (firstDrawValue, shouldTriggerDraw) = cardsHolding.getNextCard();
+        (firstDrawValue) = cardsHolding.getFirstFlipCard();
         Card memory firstDraw = Card(firstDrawValue);
-        if (shouldTriggerDraw) {
-            drawBulkRandomCards();
-        }
+
+        //check this fucntion call, Dheeraj
+        // if (shouldTriggerDraw) {
+        //     drawBulkRandomCards();
+        // }
 
         GameCards memory gameCards = GameCards(
             firstDraw,
@@ -276,11 +256,11 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
 
         uint256 secondDrawValue;
         bool shouldTriggerDraw;
-        (secondDrawValue, shouldTriggerDraw) = cardsHolding.getNextCard();
+        (secondDrawValue) = cardsHolding.getNextCard();
         Card memory secondDraw = Card(secondDrawValue);
-        if (shouldTriggerDraw) {
-            drawBulkRandomCards();
-        }
+        // if (shouldTriggerDraw) {
+        //     drawBulkRandomCards();
+        // }
 
         currentGameCards.secondDraw = secondDraw;
         currentGame.betAmount = msg.value;
@@ -325,11 +305,11 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
 
         uint256 thirdDrawValue;
         bool shouldTriggerDraw;
-        (thirdDrawValue, shouldTriggerDraw) = cardsHolding.getNextCard();
+        (thirdDrawValue) = cardsHolding.getNextCard();
         Card memory thirdDraw = Card(thirdDrawValue);
-        if (shouldTriggerDraw) {
-            drawBulkRandomCards();
-        }
+        // if (shouldTriggerDraw) {
+        //     drawBulkRandomCards();
+        // }
 
         currentGameCards.thirdDraw = thirdDraw;
         currentGame.secondPrediction = higher;
@@ -396,5 +376,43 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
             value: supportersCommission
         }();
         require(ssuccess, "Supporters commission payout failed.");
+    }
+
+    function setAtomationAddress(address _automation) public onlyOwner {
+        require(_automation != address(0), "Invalid address");
+
+        AutomationAddress = _automation;
+    }
+
+    function setBetAmounts() private {
+        // Set low bet payoffs
+        LOW_BET_PAYOFFS[1] = 200;
+        LOW_BET_PAYOFFS[2] = 192;
+        LOW_BET_PAYOFFS[3] = 184;
+        LOW_BET_PAYOFFS[4] = 176;
+        LOW_BET_PAYOFFS[5] = 169;
+        LOW_BET_PAYOFFS[6] = 161;
+        LOW_BET_PAYOFFS[7] = 153;
+        LOW_BET_PAYOFFS[8] = 146;
+        LOW_BET_PAYOFFS[9] = 138;
+        LOW_BET_PAYOFFS[10] = 130;
+        LOW_BET_PAYOFFS[11] = 123;
+        LOW_BET_PAYOFFS[12] = 115;
+        LOW_BET_PAYOFFS[13] = 100;
+
+        // Set low bet payoffs
+        HIGH_BET_PAYOFFS[1] = 100;
+        HIGH_BET_PAYOFFS[2] = 115;
+        HIGH_BET_PAYOFFS[3] = 123;
+        HIGH_BET_PAYOFFS[4] = 130;
+        HIGH_BET_PAYOFFS[5] = 138;
+        HIGH_BET_PAYOFFS[6] = 146;
+        HIGH_BET_PAYOFFS[7] = 153;
+        HIGH_BET_PAYOFFS[8] = 161;
+        HIGH_BET_PAYOFFS[9] = 169;
+        HIGH_BET_PAYOFFS[10] = 176;
+        HIGH_BET_PAYOFFS[11] = 184;
+        HIGH_BET_PAYOFFS[12] = 192;
+        HIGH_BET_PAYOFFS[13] = 200;
     }
 }
