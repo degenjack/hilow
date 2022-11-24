@@ -36,6 +36,11 @@ module.exports = {
       url: process.env.ALCHEMY_KEY,
       accounts: [process.env.METAMASK_KEY],
     },
+    polygon: {
+      url: process.env.ALCHEMY_KEY_MAINNET,
+      accounts: [process.env.METAMASK_KEY],
+
+    }
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_KEY,

@@ -32,13 +32,21 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
         0x7a1BaC17Ccc5b313516C5E16fb24f7659aA5ebed;
     bytes32 constant s_keyHash =
         0x4b09e658ed251bcafeebbc69400383d49f344ace09b9576fe248bb02c003fe9f;
-    uint32 constant callbackGasLimit = 300000;
-    uint16 constant requestConfirmations = 3;
+
+    // address constant vrfCoordinator =
+    //     0xAE975071Be8F8eE67addBC1A82488F1C24858067;
+    // bytes32 constant s_keyHash =
+    //     0xcc294a196eeeb44da2888d17c0625cc88d70d9760a69d58d853ba6581a9ab0cd;
+
+    uint32 constant callbackGasLimit = 1000000;
+    uint16 constant requestConfirmations = 13;
+
     uint32 private MAX_WORDS;
     uint256 MAX_BET_AMOUNT = 5 * 10**18;
     PayableHilowContract teamContract;
     PayableHilowContract supportersContract;
     CardsHoldingInterface cardsHolding;
+
     Card placeholderCard = Card(0);
     GameCards placeholderGameCards =
         GameCards(placeholderCard, placeholderCard, placeholderCard);
@@ -130,7 +138,10 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
 
     //Do we need this function
     function initialCardLoad() public {
-        require(AutomationAddress != address(0), "AutomationAddress null, please ask admin to set the address");
+        require(
+            AutomationAddress != address(0),
+            "AutomationAddress null, please ask admin to set the address"
+        );
         require(
             AutomationAddress == msg.sender,
             " Only authorised address can call the function"
@@ -384,6 +395,12 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
         AutomationAddress = _automation;
     }
 
+    function setCardsHoldingAddress(address _cardholding) public onlyOwner {
+        require(_cardholding != address(0), "Invalid address");
+
+        cardsHolding = CardsHoldingInterface(_cardholding);
+    }
+
     function setBetAmounts() private {
         // Set low bet payoffs
         LOW_BET_PAYOFFS[1] = 200;
@@ -415,4 +432,6 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
         HIGH_BET_PAYOFFS[12] = 192;
         HIGH_BET_PAYOFFS[13] = 200;
     }
+
+    fallback() external payable {}
 }

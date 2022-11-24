@@ -5,6 +5,7 @@ pragma solidity ^0.8.7;
 // ./interfaces/AutomationCompatibleInterface.sol
 import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
 import "./Hilow.sol";
+import "./CardsHolding.sol";
 
 /**
  * THIS IS AN EXAMPLE CONTRACT THAT USES HARDCODED VALUES FOR CLARITY.
@@ -17,7 +18,8 @@ contract Counter is AutomationCompatibleInterface {
      * Public counter variable
      */
     uint256 public counter;
-    Hilow  public hillowContract;
+    Hilow public hillowContract;
+    CardsHolding public cardsHoldingContract;
     address public _owner;
     /**
      * Use an interval in seconds and a timestamp to slow execution of Upkeep
@@ -25,10 +27,15 @@ contract Counter is AutomationCompatibleInterface {
     uint256 public immutable interval;
     uint256 public lastTimeStamp;
 
-    constructor(uint256 updateInterval, address _hilloAddress) {
+    constructor(
+        uint256 updateInterval,
+        address _hilloAddress,
+        address _cardholding
+    ) {
         interval = updateInterval;
         lastTimeStamp = block.timestamp;
         hillowContract = Hilow(payable(_hilloAddress));
+        cardsHoldingContract = CardsHolding(payable(_cardholding));
         counter = 0;
         _owner = msg.sender;
     }
@@ -40,11 +47,16 @@ contract Counter is AutomationCompatibleInterface {
         view
         override
         returns (
-            bool upkeepNeeded,
+            bool,
             bytes memory /* performData */
         )
     {
-        upkeepNeeded = true;
+        bool upkeepNeeded = true;
+        uint256 length = cardsHoldingContract.getStoredCardsLength();
+        if (length > 2999) {
+            upkeepNeeded = false;
+        }
+        return (upkeepNeeded, "");
         // We don't use the checkData in this example. The checkData is defined when the Upkeep was registered.
     }
 
@@ -58,6 +70,13 @@ contract Counter is AutomationCompatibleInterface {
 
     function setHiContractAddress(address _hicontract) external {
         require(msg.sender == _owner, "only owner can cal this fucntion");
+        require(_hicontract != address(0), "Invalid address");
         hillowContract = Hilow(payable(_hicontract));
+    }
+
+    function updateCardHoldingaddress(address _cardContract) external {
+        require(msg.sender == _owner, "only owner can cal this fucntion");
+        require(_cardContract != address(0), "Invalid address");
+        cardsHoldingContract = CardsHolding(payable(_cardContract));
     }
 }
