@@ -11,7 +11,7 @@ const main = async () => {
     // console.log("Deploying contracts with the account:", deployer.address);
 
     const counterFactory = await ethers.getContractFactory('Counter')
-    const charCollection = await counterFactory.deploy(10, "0x1B617fE902E982FBd3c28680AEDe0Cc7098c8b2A")
+    const charCollection = await counterFactory.deploy(10, "0x5F0227f5dAA0f86750c0748b0D479A35f94b9b25", "0x6BcFc80272F141eED6402F28E875082ea9b395b6")
     await charCollection.deployed()
     console.log('Automation Contract deployed to:', charCollection.address)
     // await charCollection.deployed();

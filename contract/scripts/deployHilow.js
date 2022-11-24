@@ -1,16 +1,18 @@
 const hre = require("hardhat");
+require("dotenv").config();
 const main = async () => {
-    const verify = async (_adrs, _args) => {
-        await hre.run("verify:verify", {
-            address: _adrs,
-            constructorArguments: [_args],
-        });
-    };
+    // const verify = async (_adrs, _args) => {
+    //     await hre.run("verify:verify", {
+    //         address: _adrs,
+    //         constructorArguments: [_args],
+    //     });
+    // };
     const HilowFactory = await hre.ethers.getContractFactory("Hilow");
     const Hilow = await HilowFactory.deploy(
-        "0xE8C5A03f58fD66956e4eB52aD76B46E593464fbc",
-        "0xCE78Ac298d7Fbeb60E552591e68eF23694160C72",
-        "0xB093A21Bbe37BaB5fb0373254b3D8a2923462A8E",
+        process.env.CHAINLINK_VRF_SUBSCRIPTION_ID,
+        "0x3EC2279AFFC8b8B110ff670E1a2BB1BB79626abA",
+        "0x5525355d86f20b2B63e78FB9e567aB1DCab61CBF",
+        "0x6BcFc80272F141eED6402F28E875082ea9b395b6",
         process.env.MAX_WORDS,
         {
             value: hre.ethers.utils.parseEther("0.1"),

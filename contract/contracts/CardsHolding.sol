@@ -187,7 +187,7 @@ contract CardsHolding is CardsHoldingInterface {
     //     hiContract = _automation;
     // }
 
-    function getStoredCardsLength() internal view returns (uint256 length) {
+    function getStoredCardsLength() external view returns (uint256 length) {
         length = cards.length;
     }
 }
