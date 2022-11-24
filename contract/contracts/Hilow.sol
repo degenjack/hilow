@@ -38,8 +38,8 @@ contract Hilow is VRFConsumerBaseV2, PayableHilowContract, Ownable {
     // bytes32 constant s_keyHash =
     //     0xcc294a196eeeb44da2888d17c0625cc88d70d9760a69d58d853ba6581a9ab0cd;
 
-    uint32 constant callbackGasLimit = 300000;
-    uint16 constant requestConfirmations = 12;
+    uint32 constant callbackGasLimit = 1000000;
+    uint16 constant requestConfirmations = 13;
 
     uint32 private MAX_WORDS;
     uint256 MAX_BET_AMOUNT = 5 * 10**18;

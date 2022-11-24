@@ -8,7 +8,6 @@ const main = async () => {
     };
     const HilowFactory = await hre.ethers.getContractFactory("Hilow");
     const Hilow = await HilowFactory.deploy(
-        process.env.CHAINLINK_VRF_SUBSCRIPTION_ID,
         "0xE8C5A03f58fD66956e4eB52aD76B46E593464fbc",
         "0xCE78Ac298d7Fbeb60E552591e68eF23694160C72",
         "0xB093A21Bbe37BaB5fb0373254b3D8a2923462A8E",

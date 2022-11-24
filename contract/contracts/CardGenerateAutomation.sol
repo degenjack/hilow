@@ -51,10 +51,10 @@ contract Counter is AutomationCompatibleInterface {
             bytes memory /* performData */
         )
     {
-        bool upkeepNeeded = false;
+        bool upkeepNeeded = true;
         uint256 length = cardsHoldingContract.getStoredCardsLength();
-        if (length < 999) {
-            upkeepNeeded = true;
+        if (length > 2999) {
+            upkeepNeeded = false;
         }
         return (upkeepNeeded, "");
         // We don't use the checkData in this example. The checkData is defined when the Upkeep was registered.
